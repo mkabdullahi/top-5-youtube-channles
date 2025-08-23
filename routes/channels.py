@@ -12,20 +12,17 @@ def get_channels(category):
         return jsonify({"error": "Category is required"}), 400
 
     try:
-        channels = get_top_5_channels_by_category(category)
+        channels, error = get_top_5_channels_by_category(category)
+        if error:
+            # Map simple errors to HTTP status
+            status = 400 if 'required' in error.lower() else 502
+            if 'quota' in (error or '').lower():
+                status = 429
+            return jsonify({"error": error}), status
         return jsonify({
             "category": category,
             "channels": channels
         })
-    except ValueError as ve:
-        return jsonify({"error": str(ve)}), 400
-    except RuntimeError as re:
-        # Could be API failure or quota limit
-        msg = str(re)
-        status = 502
-        if 'quota' in msg.lower():
-            status = 429
-        return jsonify({"error": "YouTube API error", "details": msg}), status
     except Exception as e:
         return jsonify({"error": "Internal server error", "details": str(e)}), 500
 
@@ -33,8 +30,5 @@ def get_channels(category):
 @channels_bp.route('/view/<category>')
 def view_channels(category):
     # Render a simple HTML page with the top channels
-    try:
-        channels = get_top_5_channels_by_category(category)
-    except Exception:
-        channels = []
-    return render_template('channels.html', category=category, channels=channels)
+    channels, error = get_top_5_channels_by_category(category)
+    return render_template('channels.html', category=category, channels=channels, error=error)
