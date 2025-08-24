@@ -6,11 +6,12 @@ import os
 load_dotenv()
 
 app = Flask(__name__)
+application = app  # WSGI entry point for PythonAnywhere
 app.register_blueprint(channels_bp)
 
 
-# Enable template auto-reload in development
-app.config['TEMPLATES_AUTO_RELOAD'] = True
+# Template reload controlled by environment variable
+app.config['TEMPLATES_AUTO_RELOAD'] = os.getenv('TEMPLATES_AUTO_RELOAD', 'False').lower() in ('true', '1', 't')
 
 
 @app.route('/')
