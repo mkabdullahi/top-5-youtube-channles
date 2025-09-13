@@ -1,5 +1,6 @@
 from celery import shared_task
-from app import mongo, redis_client
+from app.services.mongodb import MongoDB
+from app.services.redis_client import redis_client
 from app.services.unified_search import UnifiedSearchService
 import json
 from datetime import datetime, timedelta

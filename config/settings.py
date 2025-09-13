@@ -9,7 +9,8 @@ class Config:
     SECRET_KEY = os.getenv('SECRET_KEY', 'dev-key-change-in-production')
     
     # MongoDB
-    MONGODB_URI = os.getenv('MONGODB_URI', 'mongodb://localhost:27017/social_dashboard')
+    MONGODB_URI = os.getenv('MONGODB_URI')
+    MONGODB_NAME = os.getenv('MONGODB_NAME', 'top5_analytics')
     
     # Redis
     REDIS_URL = os.getenv('REDIS_URL', 'redis://localhost:6379/0')

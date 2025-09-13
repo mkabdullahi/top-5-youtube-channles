@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from app import redis_client
+from app.services.redis_client import redis_client
 import json
 
 class BasePlatformService(ABC):

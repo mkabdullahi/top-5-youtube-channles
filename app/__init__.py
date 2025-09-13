@@ -1,25 +1,18 @@
 from flask import Flask
-from flask_pymongo import PyMongo
-from redis import Redis
-from celery import Celery
 from flask_login import LoginManager
 from config.settings import Config
 from app.errors import register_error_handlers
-from app.services.celery_setup import make_celery, init_background_tasks
+from app.services.celery_setup import make_celery
 
-# Initialize extensions
-mongo = PyMongo()
-redis_client = Redis()
-celery = Celery()
 login_manager = LoginManager()
 
 def create_app(config_class=Config):
     app = Flask(__name__)
     app.config.from_object(config_class)
 
-    # Initialize extensions with app
-    mongo.init_app(app)
-    redis_client.from_url(app.config['REDIS_URL'])
+    # Initialize extensions
+    from redis import Redis
+    redis_client = Redis.from_url(app.config['REDIS_URL'])
     celery = make_celery(app)
     login_manager.init_app(app)
 
@@ -36,6 +29,7 @@ def create_app(config_class=Config):
     register_error_handlers(app)
 
     # Initialize background tasks
+    from app.services.celery_setup import init_background_tasks
     init_background_tasks(app)
 
     return app

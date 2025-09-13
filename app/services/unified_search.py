@@ -1,7 +1,7 @@
 from app.services.youtube import YouTubeService
 from app.services.instagram import InstagramService
 from app.services.tiktok import TikTokService
-from app import redis_client
+from app.services.redis_client import redis_client
 import json
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta

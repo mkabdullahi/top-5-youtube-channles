@@ -1,7 +1,7 @@
 import os
 import requests
 from app.services.base import BasePlatformService
-from app import mongo
+from app.services.mongodb import MongoDB
 
 class YouTubeService(BasePlatformService):
     def __init__(self, api_key=None, cache_ttl=3600):
