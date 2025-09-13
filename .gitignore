@@ -43,3 +43,5 @@ env/
 *.swp
 *.swo
 .temp.txt
+
+COPILOT-INSTRUCTIONS.md
