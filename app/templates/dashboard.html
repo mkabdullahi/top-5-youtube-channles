@@ -1,0 +1,180 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Platform Connection Status -->
+    <div class="col-md-4 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Connected Platforms</h5>
+            </div>
+            <div class="card-body">
+                <div class="list-group">
+                    {% for platform in ['youtube', 'instagram', 'tiktok'] %}
+                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                            {{ platform|title }}
+                            {% if platform in current_user.platforms %}
+                                <span class="badge bg-success">Connected</span>
+                            {% else %}
+                                <a href="{{ url_for('auth.oauth.connect_platform', platform=platform) }}" 
+                                   class="btn btn-sm btn-primary">Connect</a>
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Category Preferences -->
+    <div class="col-md-8 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Category Preferences</h5>
+            </div>
+            <div class="card-body">
+                <form action="{{ url_for('main.update_preferences') }}" method="POST" id="preferencesForm">
+                    <div class="row">
+                        {% for category in categories %}
+                            <div class="col-md-4 mb-3">
+                                <div class="form-check">
+                                    <input type="checkbox" class="form-check-input" 
+                                           id="category_{{ category.name }}"
+                                           name="categories[]" 
+                                           value="{{ category.name }}"
+                                           {% if category.name in current_user.preferences.categories %}checked{% endif %}>
+                                    <label class="form-check-label" for="category_{{ category.name }}">
+                                        {{ category.name|title }}
+                                    </label>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                    <button type="submit" class="btn btn-primary">Save Preferences</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Top Influencers -->
+<div class="row">
+    {% for category in current_user.preferences.categories %}
+        <div class="col-12 mb-4">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">Top {{ category|title }} Influencers</h5>
+                    <div class="btn-group" role="group">
+                        {% for platform in ['all', 'youtube', 'instagram', 'tiktok'] %}
+                            <button type="button" 
+                                    class="btn btn-outline-primary platform-filter {% if loop.first %}active{% endif %}"
+                                    data-platform="{{ platform }}"
+                                    data-category="{{ category }}">
+                                {{ platform|title }}
+                            </button>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row influencers-container" id="influencers_{{ category }}">
+                        <!-- Influencer cards will be loaded here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endfor %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Load influencers for each category
+    document.querySelectorAll('.influencers-container').forEach(container => {
+        loadInfluencers(container.id.split('_')[1], 'all');
+    });
+
+    // Platform filter buttons
+    document.querySelectorAll('.platform-filter').forEach(button => {
+        button.addEventListener('click', function() {
+            const platform = this.dataset.platform;
+            const category = this.dataset.category;
+            
+            // Update active state
+            this.closest('.btn-group').querySelectorAll('.btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            this.classList.add('active');
+            
+            // Reload influencers
+            loadInfluencers(category, platform);
+        });
+    });
+});
+
+function loadInfluencers(category, platform) {
+    const container = document.getElementById(`influencers_${category}`);
+    container.innerHTML = '<div class="col-12 text-center"><div class="spinner-border"></div></div>';
+    
+    fetch(`/api/influencers/top/${category}?platform=${platform}`)
+        .then(response => response.json())
+        .then(data => {
+            container.innerHTML = data.map(influencer => `
+                <div class="col-md-4 mb-3">
+                    <div class="card h-100">
+                        <div class="card-body">
+                            <h5 class="card-title">${influencer.name}</h5>
+                            <p class="card-text">
+                                <small class="text-muted">Platform: ${influencer.platform}</small>
+                            </p>
+                            <div class="metrics">
+                                ${renderMetrics(influencer.metrics)}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        })
+        .catch(error => {
+            container.innerHTML = `
+                <div class="col-12">
+                    <div class="alert alert-danger">Error loading influencers</div>
+                </div>
+            `;
+            console.error('Error:', error);
+        });
+}
+
+function renderMetrics(metrics) {
+    if (!metrics) return '';
+    
+    const metricLabels = {
+        subscriberCount: 'Subscribers',
+        viewCount: 'Views',
+        followersCount: 'Followers',
+        postsCount: 'Posts'
+    };
+    
+    return Object.entries(metrics)
+        .map(([key, value]) => `
+            <div class="metric">
+                <span class="metric-label">${metricLabels[key] || key}:</span>
+                <span class="metric-value">${formatNumber(value)}</span>
+            </div>
+        `)
+        .join('');
+}
+
+function formatNumber(num) {
+    if (num >= 1000000) {
+        return (num / 1000000).toFixed(1) + 'M';
+    }
+    if (num >= 1000) {
+        return (num / 1000).toFixed(1) + 'K';
+    }
+    return num;
+}
+</script>
+{% endblock %}
